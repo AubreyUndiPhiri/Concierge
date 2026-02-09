@@ -33,7 +33,7 @@ Answer:`;
 
     try {
       // ✅ Corrected Hugging Face API URL
-      const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3", {
+      const response = await fetch("https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${hfToken}`,
