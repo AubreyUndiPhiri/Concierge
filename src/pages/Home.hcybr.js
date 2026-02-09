@@ -2,36 +2,32 @@ import { askAI } from 'backend/aibridge.web';
 import wixLocation from 'wix-location';
 
 $w.onReady(() => {
-
-    // Get room number from URL (e.g. ?room=6)
     const roomNumber = wixLocation.query.room || "General";
+    const chatWidget = $w("#html1");
 
-    // Listen for messages FROM the HTML component
-    $w("#html1").onMessage(async (event) => {
+    if (!chatWidget) {
+        console.error("CRITICAL: Element #html1 not found on page. Check your element ID in the Wix Editor.");
+        return;
+    }
 
-        //  Safety check: only accept expected messages
+    chatWidget.onMessage(async (event) => {
+        console.log("Message received from HTML component:", event.data);
+
+        // Protocol Verification: Ensure the HTML component sends { type: "chat", payload: "..." }
         if (!event.data || event.data.type !== "chat") {
+            console.warn("Ignored message with invalid protocol. Expected type 'chat'.", event.data);
             return;
         }
 
         const guestMsg = event.data.payload;
-
-        if (!guestMsg || typeof guestMsg !== "string") {
-            return;
-        }
+        if (!guestMsg || typeof guestMsg !== "string") return;
 
         try {
-            //  Call backend AI
             const aiResponse = await askAI(guestMsg, roomNumber);
-
-            //  Send response back to HTML UI
-            $w("#html1").postMessage(aiResponse);
-
+            chatWidget.postMessage(aiResponse);
         } catch (err) {
-            console.error("Frontend Error:", err);
-            $w("#html1").postMessage(
-                "Sorry, I’m having trouble right now. Please try again in a moment."
-            );
+            console.error("Frontend Error during askAI call:", err);
+            chatWidget.postMessage("Sorry, I’m having trouble right now. Please try again.");
         }
     });
 });
