@@ -7,14 +7,16 @@ export const askAI = webMethod(
   async (userMessage, roomNumber) => {
 
     const hfToken = await getSecret("HF_TOKEN");
-    if (!hfToken) return "AI configuration error. Please contact reception.";
+    if (!hfToken) {
+        console.error("HF_TOKEN secret not found in Secrets Manager.");
+        return "AI configuration error. Please contact reception.";
+    }
 
     const roomNames = {
       "1": "Tonga", "2": "Tumbuka", "3": "Soli", "4": "Lenje",
       "5": "Lamba", "6": "Bemba", "7": "Lozi", "8": "Tokaleya", "9": "Luvale"
     };
 
-    // Strengthened room number logic: force to string and handle "General" or null safely
     const sanitizedRoom = roomNumber ? String(roomNumber) : "General";
     const currentRoomName = roomNames[sanitizedRoom] || "Valued Guest";
 
@@ -32,28 +34,28 @@ Guest Question: ${userMessage}
 Answer:`;
 
     try {
-      // ✅ Corrected Hugging Face API URL
       const response = await fetch("https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${hfToken}`,
           "Content-Type": "application/json",
-          "x-wait-for-model": "true" // Tells HF to wait for the model to load
+          "x-wait-for-model": "true" 
         },
         body: JSON.stringify({
           inputs: fullPrompt,
           parameters: {
             max_new_tokens: 150,
-            temperature: 0.5, // Lower temperature = more factual for lodge info
-            return_full_text: false // ✅ This helps prevent the prompt-echo
+            temperature: 0.5, 
+            return_full_text: false 
           }
         }),
-        timeout: 15000 // Added a 15-second timeout for better robustness
+        timeout: 30000 // Increased timeout to 30s to allow for cold starts
       });
 
-      // Handle HTTP errors and "Cold Starts"
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Hugging Face API Error Response:", errorData);
+        
         if (errorData.error && errorData.error.includes("loading")) {
           return "The AI is still waking up. Please send your message again in a few seconds.";
         }
@@ -69,11 +71,18 @@ Answer:`;
         answer = result.generated_text || "";
       }
 
-      // Final Cleanup
-      return answer.replace(fullPrompt, "").trim() || "I'm not sure, please contact reception.";
+      // Updated Cleanup logic: If answer is empty after trimming, provide a fallback.
+      const finalResult = answer.trim();
+
+      if (!finalResult) {
+          console.error("AI returned an empty string. Raw API result:", JSON.stringify(result));
+          return "I'm not sure, please contact reception at +260978178820.";
+      }
+
+      return finalResult;
 
     } catch (err) {
-      console.error("HF API Error:", err);
+      console.error("Connection or Internal Error:", err);
       return "Connection error. Please call reception at +260978178820.";
     }
   }
