@@ -1,16 +1,20 @@
 import { Permissions, webMethod } from "wix-web-module";
 import { fetch } from "wix-fetch";
-import { getSecret } from "wix-secrets-backend";
+// import { getSecret } from "wix-secrets-backend"; // Temporarily commented out
 
 export const askAI = webMethod(
   Permissions.Anyone,
   async (userMessage, roomNumber) => {
 
-    const hfToken = await getSecret("HF_TOKEN");
+    // Temporarily hardcoding for testing purposes
+    const hfToken = "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"; 
+    
+    /* const hfToken = await getSecret("HF_TOKEN");
     if (!hfToken) {
         console.error("HF_TOKEN secret not found in Secrets Manager.");
         return "AI configuration error. Please contact reception.";
     }
+    */
 
     const roomNames = {
       "1": "Tonga", "2": "Tumbuka", "3": "Soli", "4": "Lenje",
@@ -34,7 +38,6 @@ Guest Question: ${userMessage}
 Answer:`;
 
     try {
-      // ✅ Updated to the new Hugging Face supported router URL
       const response = await fetch("https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.2-3B-Instruct", {
         method: "POST",
         headers: {
@@ -50,7 +53,7 @@ Answer:`;
             return_full_text: false 
           }
         }),
-        timeout: 30000 // 30s timeout to allow for cold starts
+        timeout: 30000 
       });
 
       if (!response.ok) {
@@ -75,7 +78,6 @@ Answer:`;
       const finalResult = answer.trim();
 
       if (!finalResult) {
-          console.error("AI returned an empty string. Raw API result:", JSON.stringify(result));
           return "I'm not sure, please contact reception at +260978178820.";
       }
 
