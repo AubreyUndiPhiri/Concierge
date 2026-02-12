@@ -34,7 +34,8 @@ Guest Question: ${userMessage}
 Answer:`;
 
     try {
-      const response = await fetch("https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct", {
+      // ✅ Updated to the new Hugging Face supported router URL
+      const response = await fetch("https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.2-3B-Instruct", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${hfToken}`,
@@ -49,7 +50,7 @@ Answer:`;
             return_full_text: false 
           }
         }),
-        timeout: 30000 // Increased timeout to 30s to allow for cold starts
+        timeout: 30000 // 30s timeout to allow for cold starts
       });
 
       if (!response.ok) {
@@ -71,7 +72,6 @@ Answer:`;
         answer = result.generated_text || "";
       }
 
-      // Updated Cleanup logic: If answer is empty after trimming, provide a fallback.
       const finalResult = answer.trim();
 
       if (!finalResult) {
