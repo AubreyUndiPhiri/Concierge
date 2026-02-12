@@ -6,29 +6,30 @@ $w.onReady(() => {
     const chatWidget = $w("#html1");
 
     if (!chatWidget) {
-        console.error("CRITICAL: Element #html1 not found on page.");
+        console.error("CRITICAL: Element #html1 (Chat Widget) not found on page.");
         return;
     }
 
-    // Initialize: Send room context to the widget for a personalized greeting
+    // Initialize the widget with the specific room context.
     chatWidget.postMessage({ type: "init", room: roomNumber });
 
     chatWidget.onMessage(async (event) => {
+        // Only process specific chat-type events from the widget.
         if (!event.data || event.data.type !== "chat") return;
 
         const guestMsg = event.data.payload;
         if (!guestMsg) return;
 
-        // Signal widget to show typing indicator
+        // Signal the widget to show the animated typing dots.
         chatWidget.postMessage({ type: "status", value: "typing" });
 
         try {
             const aiResponse = await askAI(guestMsg, roomNumber);
-            // Send response wrapped in the expected payload structure
+            // Send the final response back to the widget.
             chatWidget.postMessage({ type: "response", payload: aiResponse });
         } catch (err) {
-            console.error("Frontend Error:", err);
-            chatWidget.postMessage({ type: "response", payload: "I’m having trouble right now. Please call +260978178820." });
+            console.error("Frontend call error:", err);
+            chatWidget.postMessage({ type: "response", payload: "I'm having trouble right now. Please call +260978178820." });
         }
     });
 });
