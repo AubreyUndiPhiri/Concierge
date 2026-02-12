@@ -32,29 +32,31 @@ TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
 
     try {
       // IMPLEMENTATION: Using the new OpenAI-compatible Hugging Face Router endpoint.
-      const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${hfToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "meta-llama/Llama-3.2-3B-Instruct",
-          messages: [
-            {
-              "role": "system",
-              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}`
-            },
-            {
-              "role": "user",
-              "content": userMessage
-            }
-          ],
-          max_tokens: 150,
-          temperature: 0.5
-        })
-      });
+      c// Inside your askAI function in src/backend/aibridge.web.js
 
+const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${hfToken}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    // UPDATE THIS LINE:
+    model: "mistralai/Mistral-7B-Instruct-v0.1", 
+    messages: [
+      {
+        "role": "system",
+        "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}`
+      },
+      {
+        "role": "user",
+        "content": userMessage
+      }
+    ],
+    max_tokens: 150,
+    temperature: 0.5
+  })
+});
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Hugging Face API Error:", errorText);
