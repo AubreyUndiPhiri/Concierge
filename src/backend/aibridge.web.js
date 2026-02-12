@@ -86,7 +86,9 @@ Answer:`; //
 
       return finalResult;
 
+// Update your catch block to provide more detail
     } catch (err) {
+      console.error("Parsing Error. Raw response was:", responseText); // Line to add
       console.error("Connection or Internal Error:", err.message);
       return "Connection error. Please call reception at +260978178820.";
     }
