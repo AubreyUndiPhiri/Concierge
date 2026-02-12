@@ -5,7 +5,8 @@ import { getSecret } from "wix-secrets-backend";
 export const askAI = webMethod(
   Permissions.Anyone,
   async (userMessage, roomNumber) => {
-    // Retrieve the secret securely from Wix Secrets Manager
+    // SECURE: Fetches the token from the Wix dashboard's Secrets Manager.
+    // Ensure you have added a secret named "HF_TOKEN" there.
     const hfToken = await getSecret("HF_TOKEN");
     
     if (!hfToken) {
@@ -30,7 +31,7 @@ TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
 `.trim();
 
     try {
-      // Use the new Hugging Face Router endpoint with OpenAI-compatible path
+      // IMPLEMENTATION: Using the new OpenAI-compatible Hugging Face Router endpoint.
       const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -38,12 +39,11 @@ TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          // Using the specific model string provided in your example
           model: "meta-llama/Llama-3.2-3B-Instruct",
           messages: [
             {
               "role": "system",
-              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following info to assist the guest:\n${lodgeInfo}`
+              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}`
             },
             {
               "role": "user",
@@ -56,23 +56,23 @@ TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
       });
 
       if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Hugging Face Router Error:", errorBody);
+        const errorText = await response.text();
+        console.error("Hugging Face API Error:", errorText);
         return "The concierge service is temporarily unavailable. Please try again shortly.";
       }
 
       const result = await response.json();
 
-      // Navigate the OpenAI-style response structure: result.choices[0].message.content
+      // PARSING: Extracting content from the standard OpenAI-style response structure.
       if (result.choices && result.choices.length > 0 && result.choices[0].message) {
         return result.choices[0].message.content.trim();
       } else {
-        console.error("Unexpected API response structure:", JSON.stringify(result));
+        console.error("Unexpected API structure:", JSON.stringify(result));
         return "I'm not sure, please contact reception at +260978178820.";
       }
 
     } catch (err) {
-      console.error("Internal Connection Error:", err.message);
+      console.error("Internal Backend Error:", err.message);
       return "Connection error. Please call reception at +260978178820.";
     }
   }
