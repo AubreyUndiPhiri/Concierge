@@ -30,44 +30,41 @@ TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
 `.trim();
 
     try {
-      // Using the new OpenAI-compatible Hugging Face Router endpoint
-      const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+      // FIX: Use the standard Inference API endpoint instead of the Router
+      const modelId = "mistralai/Mistral-7B-Instruct-v0.3";
+      const hfEndpoint = `https://api-inference.huggingface.co/models/${modelId}`;
+
+      const response = await fetch(hfEndpoint, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${hfToken}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          // Updated to the Mistral model
-          model: "mistralai/Mistral-7B-Instruct-v0.1", 
-          messages: [
-            {
-              "role": "system",
-              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}`
-            },
-            {
-              "role": "user",
-              "content": userMessage
-            }
-          ],
-          max_tokens: 150,
-          temperature: 0.5
+          // Mistral v0.3 uses [INST] tags for better instruction following
+          inputs: `[INST] You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}\n\nGuest asks: ${userMessage} [/INST]`,
+          parameters: {
+            max_new_tokens: 150,
+            temperature: 0.5,
+            return_full_text: false
+          }
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Hugging Face API Error:", errorText);
-        return "The concierge service is temporarily unavailable. Please try again shortly.";
+        return "The concierge service is temporarily resting. Please try again shortly.";
       }
 
       const result = await response.json();
 
-      // PARSING: Extracting content from the standard OpenAI-style response structure.
-      if (result.choices && result.choices.length > 0 && result.choices[0].message) {
-        return result.choices[0].message.content.trim();
+      // PARSING: Standard Inference API returns an array [{generated_text: "..."}]
+      if (Array.isArray(result) && result[0].generated_text) {
+        return result[0].generated_text.trim();
+      } else if (result.generated_text) {
+        return result.generated_text.trim();
       } else {
-        console.error("Unexpected API structure:", JSON.stringify(result));
         return "I'm not sure, please contact reception at +260978178820.";
       }
 
