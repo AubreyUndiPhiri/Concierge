@@ -30,7 +30,7 @@ export const askAI = webMethod(
     `.trim();
 
     try {
-      // MANDATORY: Switched to the Router endpoint as required by the error.
+      // Use the Router endpoint with a supported model
       const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -38,8 +38,8 @@ export const askAI = webMethod(
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          // Using a widely supported model on the Router.
-          model: "mistralai/Mistral-7B-Instruct-v0.1", 
+          // Using Llama-3.1 which is widely supported by Router providers
+          model: "meta-llama/Llama-3.1-8B-Instruct", 
           messages: [
             {
               "role": "system",
@@ -63,7 +63,7 @@ export const askAI = webMethod(
 
       const result = await response.json();
 
-      // PARSING: Extracting content from the standard OpenAI-style response structure.
+      // PARSING: Correctly extract the message content from the Router's response object
       if (result.choices && result.choices.length > 0 && result.choices[0].message) {
         return result.choices[0].message.content.trim();
       } else {
