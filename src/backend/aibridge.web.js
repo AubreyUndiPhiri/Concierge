@@ -57,7 +57,7 @@ export const askAI = webMethod(
             }
           ],
           max_tokens: 250,
-          temperature: 0.6
+          temperature: 0.55
         })
       });
 
