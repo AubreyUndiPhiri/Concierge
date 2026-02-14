@@ -48,7 +48,7 @@ export const askAI = webMethod(
           messages: [
             {
               "role": "system",
-              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. 
+              "content": `Yourr name is Nkhosi and you are a professional concierge for Nkhosi Livingstone Lodge & SPA. 
               IMPORTANT INSTRUCTION: If the guest asks for the menu, food, or activity prices, you MUST provide the relevant text summary AND the corresponding IMAGE URL from the lodge info on a separate line. The chat interface will automatically render the image for the guest.\n\nLodge Info:\n${lodgeInfo}`
             },
             {
@@ -57,7 +57,7 @@ export const askAI = webMethod(
             }
           ],
           max_tokens: 250,
-          temperature: 0.5
+          temperature: 0.6
         })
       });
 
