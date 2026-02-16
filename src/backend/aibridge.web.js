@@ -4,10 +4,12 @@ import { getSecret } from "wix-secrets-backend";
 
 export const askAI = webMethod(
   Permissions.Anyone,
-  async (userMessage, roomNumber, chatHistory = []) => { // Added history param
+  async (userMessage, roomNumber) => {
+    // SECURE: Fetches the token from the Wix dashboard's Secrets Manager.
     const hfToken = await getSecret("HF_TOKEN");
     
     if (!hfToken) {
+        console.error("HF_TOKEN secret not found in Secrets Manager.");
         return "AI configuration error. Please contact reception.";
     }
 
@@ -27,14 +29,8 @@ export const askAI = webMethod(
     TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
     `.trim();
 
-    // Prepare the messages array with history
-    const messages = [
-      { "role": "system", "content": `You are the concierge for Nkhosi Lodge. Use this info:\n${lodgeInfo}` },
-      ...chatHistory,
-      { "role": "user", "content": userMessage }
-    ];
-
     try {
+      // Use the Router endpoint with a supported model
       const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -42,21 +38,41 @@ export const askAI = webMethod(
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          // Using Llama-3.1 which is widely supported by Router providers
           model: "meta-llama/Llama-3.1-8B-Instruct", 
-          messages: messages,
+          messages: [
+            {
+              "role": "system",
+              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}`
+            },
+            {
+              "role": "user",
+              "content": userMessage
+            }
+          ],
           max_tokens: 150,
           temperature: 0.5
         })
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Hugging Face Router Error:", errorText);
+        return "The concierge service is temporarily unavailable. Please try again shortly.";
+      }
+
       const result = await response.json();
 
-      if (result.choices && result.choices.length > 0) {
+      // PARSING: Correctly extract the message content from the Router's response object
+      if (result.choices && result.choices.length > 0 && result.choices[0].message) {
         return result.choices[0].message.content.trim();
       } else {
+        console.error("Unexpected API structure:", JSON.stringify(result));
         return "I'm not sure, please contact reception at +260978178820.";
       }
+
     } catch (err) {
+      console.error("Internal Backend Error:", err.message);
       return "Connection error. Please call reception at +260978178820.";
     }
   }
