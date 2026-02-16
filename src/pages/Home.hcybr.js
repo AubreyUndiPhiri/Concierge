@@ -30,11 +30,11 @@ $w.onReady(() => {
             // 1. Send the message AND the current history to the backend
             const aiResponse = await askAI(guestMsg, roomNumber, chatHistory);
 
-            // 2. Update the history array so Nkhosi remembers this for next time
+            // 2. Update the history array so the AI remembers this
             chatHistory.push({ "role": "user", "content": guestMsg });
             chatHistory.push({ "role": "assistant", "content": aiResponse });
 
-            // 3. Keep history manageable (optional: keep last 10 exchanges)
+            // 3. Keep history manageable (keep last 10 exchanges)
             if (chatHistory.length > 20) {
                 chatHistory = chatHistory.slice(-20);
             }
