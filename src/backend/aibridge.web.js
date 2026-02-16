@@ -4,11 +4,12 @@ import { getSecret } from "wix-secrets-backend";
 
 export const askAI = webMethod(
   Permissions.Anyone,
-  async (userMessage, roomNumber, history = []) => { // Added history parameter
+  async (userMessage, roomNumber) => {
+    // SECURE: Fetches the token from the Wix dashboard's Secrets Manager.
     const hfToken = await getSecret("HF_TOKEN");
     
     if (!hfToken) {
-        console.error("HF_TOKEN secret not found.");
+        console.error("HF_TOKEN secret not found in Secrets Manager.");
         return "AI configuration error. Please contact reception.";
     }
 
@@ -24,28 +25,12 @@ export const askAI = webMethod(
     NKHOSI LIVINGSTONE LODGE & SPA
     Guest Room: ${currentRoomName} (Room #${sanitizedRoom})
     WI-FI: Nkhosi12 / 12nkhosi@
-    
-    IMAGE URLS:
-    - DINNER MENU: https://static.wixstatic.com/media/893963_f29c4266205847429188e7b925b68636~mv2.jpg
-    - LUNCH MENU: https://static.wixstatic.com/media/893963_558066f11186498e8587399882206777~mv2.jpg
-    - ACTIVITIES LIST: https://static.wixstatic.com/media/893963_a9263152431749839446973307613585~mv2.jpg
-
-    PRICING: T-Bone K285, Bream K285, Rump K260, Chicken K200, Pepper Steak K350.
+    MENU: T-Bone K285, Bream K285, Rump Steak K260, Glazed Chicken K200, Pepper Steak K350.
     TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
     `.trim();
 
-    // Determine if this is the start of the chat
-    const isFirstMessage = history.length === 0;
-
-    const systemPrompt = `Your name is Nkhosi, a professional concierge for Nkhosi Livingstone Lodge & SPA. 
-    ${isFirstMessage ? "Greet the guest warmly, introduce yourself as Nkhosi, and mention their room name: " + currentRoomName + "." : "Be helpful and concise. Do not repeat your introduction."}
-    
-    INSTRUCTIONS: If asked for menus or activities, provide the text summary AND the IMAGE URL on a new line.
-    
-    Lodge Info:
-    ${lodgeInfo}`;
-
     try {
+      // Use the Router endpoint with a supported model
       const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -53,23 +38,41 @@ export const askAI = webMethod(
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          // Using Llama-3.1 which is widely supported by Router providers
           model: "meta-llama/Llama-3.1-8B-Instruct", 
           messages: [
-            { "role": "system", "content": systemPrompt },
-            ...history, // Include previous chat turns
-            { "role": "user", "content": userMessage }
+            {
+              "role": "system",
+              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}`
+            },
+            {
+              "role": "user",
+              "content": userMessage
+            }
           ],
-          max_tokens: 250,
-          temperature: 0.55
+          max_tokens: 150,
+          temperature: 0.5
         })
       });
 
-      if (!response.ok) return "The concierge is briefly away. Please try again.";
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Hugging Face Router Error:", errorText);
+        return "The concierge service is temporarily unavailable. Please try again shortly.";
+      }
 
       const result = await response.json();
-      return result.choices[0].message.content.trim();
+
+      // PARSING: Correctly extract the message content from the Router's response object
+      if (result.choices && result.choices.length > 0 && result.choices[0].message) {
+        return result.choices[0].message.content.trim();
+      } else {
+        console.error("Unexpected API structure:", JSON.stringify(result));
+        return "I'm not sure, please contact reception at +260978178820.";
+      }
 
     } catch (err) {
+      console.error("Internal Backend Error:", err.message);
       return "Connection error. Please call reception at +260978178820.";
     }
   }
