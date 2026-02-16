@@ -30,44 +30,41 @@ export const askAI = webMethod(
     `.trim();
 
     try {
-      // Use the Router endpoint with a supported model
-      const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+      // Switch to the standard Inference API for better reliability
+      const modelId = "mistralai/Mistral-7B-Instruct-v0.3";
+      const hfEndpoint = `https://api-inference.huggingface.co/models/${modelId}`;
+
+      const response = await fetch(hfEndpoint, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${hfToken}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          // Using Llama-3.1 which is widely supported by Router providers
-          model: "meta-llama/Llama-3.1-8B-Instruct", 
-          messages: [
-            {
-              "role": "system",
-              "content": `You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}`
-            },
-            {
-              "role": "user",
-              "content": userMessage
-            }
-          ],
-          max_tokens: 150,
-          temperature: 0.5
+          // The standard API often uses 'inputs' instead of 'messages'
+          inputs: `[INST] You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}\n\nGuest asks: ${userMessage} [/INST]`,
+          parameters: {
+            max_new_tokens: 250,
+            temperature: 0.5,
+            return_full_text: false
+          }
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Hugging Face Router Error:", errorText);
-        return "The concierge service is temporarily unavailable. Please try again shortly.";
+        console.error("Hugging Face API Error:", errorText);
+        return "The concierge service is temporarily resting. Please try again shortly.";
       }
 
       const result = await response.json();
 
-      // PARSING: Correctly extract the message content from the Router's response object
-      if (result.choices && result.choices.length > 0 && result.choices[0].message) {
-        return result.choices[0].message.content.trim();
+      // PARSING: Standard Inference API typically returns an array
+      if (Array.isArray(result) && result[0].generated_text) {
+        return result[0].generated_text.trim();
+      } else if (result.generated_text) {
+        return result.generated_text.trim();
       } else {
-        console.error("Unexpected API structure:", JSON.stringify(result));
         return "I'm not sure, please contact reception at +260978178820.";
       }
 
