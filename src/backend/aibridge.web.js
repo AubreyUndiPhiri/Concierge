@@ -4,12 +4,10 @@ import { getSecret } from "wix-secrets-backend";
 
 export const askAI = webMethod(
   Permissions.Anyone,
-  async (userMessage, roomNumber) => {
-    // SECURE: Fetches the token from the Wix dashboard's Secrets Manager.
+  async (userMessage, roomNumber, chatHistory = []) => { // Added history param
     const hfToken = await getSecret("HF_TOKEN");
     
     if (!hfToken) {
-        console.error("HF_TOKEN secret not found in Secrets Manager.");
         return "AI configuration error. Please contact reception.";
     }
 
@@ -29,47 +27,36 @@ export const askAI = webMethod(
     TOURS: Devil's Pool $160, Microlight $200+, Sunset Cruise $85.
     `.trim();
 
-    try {
-      // Switch to the standard Inference API for better reliability
-      const modelId = "mistralai/Mistral-7B-Instruct-v0.3";
-      const hfEndpoint = `https://api-inference.huggingface.co/models/${modelId}`;
+    // Prepare the messages array with history
+    const messages = [
+      { "role": "system", "content": `You are the concierge for Nkhosi Lodge. Use this info:\n${lodgeInfo}` },
+      ...chatHistory,
+      { "role": "user", "content": userMessage }
+    ];
 
-      const response = await fetch(hfEndpoint, {
+    try {
+      const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${hfToken}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          // The standard API often uses 'inputs' instead of 'messages'
-          inputs: `[INST] You are a professional concierge for Nkhosi Livingstone Lodge & SPA. Use the following lodge info to help the guest:\n${lodgeInfo}\n\nGuest asks: ${userMessage} [/INST]`,
-          parameters: {
-            max_new_tokens: 250,
-            temperature: 0.5,
-            return_full_text: false
-          }
+          model: "meta-llama/Llama-3.1-8B-Instruct", 
+          messages: messages,
+          max_tokens: 150,
+          temperature: 0.5
         })
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Hugging Face API Error:", errorText);
-        return "The concierge service is temporarily resting. Please try again shortly.";
-      }
-
       const result = await response.json();
 
-      // PARSING: Standard Inference API typically returns an array
-      if (Array.isArray(result) && result[0].generated_text) {
-        return result[0].generated_text.trim();
-      } else if (result.generated_text) {
-        return result.generated_text.trim();
+      if (result.choices && result.choices.length > 0) {
+        return result.choices[0].message.content.trim();
       } else {
         return "I'm not sure, please contact reception at +260978178820.";
       }
-
     } catch (err) {
-      console.error("Internal Backend Error:", err.message);
       return "Connection error. Please call reception at +260978178820.";
     }
   }
