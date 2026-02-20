@@ -64,7 +64,7 @@ export const askAI = webMethod(
             }
           ],
           max_tokens: 500,
-          temperature: 0.6,
+          temperature: 0.5,
           stop: ["User:", "Nkhosi:"]
         })
       });
