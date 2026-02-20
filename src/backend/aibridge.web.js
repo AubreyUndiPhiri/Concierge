@@ -20,7 +20,6 @@ export const askAI = webMethod(
     const sanitizedRoom = roomNumber ? String(roomNumber) : "General";
     const currentRoomName = roomNames[sanitizedRoom] || "Valued Guest";
 
-    // Comprehensive Knowledge Base
     const lodgeInfo = `
     PROPERTY: NKHOSI LIVINGSTONE LODGE & SPA.
     IDENTITY: Sustainable, solar-powered eco-resort in Mukuni Village, 7km from Victoria Falls.
@@ -59,15 +58,20 @@ export const askAI = webMethod(
               "content": `
               Your name is Nkhosi. You are the professional Royal Concierge for Nkhosi Livingstone Lodge & SPA.
               
+              STYLE & TONE:
+              - Your tone is sophisticated, grounded, and deeply helpful, befitting a high-end estate.
+              - Avoid robotic "As an AI" disclaimers. Speak as an authentic member of the lodge staff.
+              - Do not use the phrase "As your Royal Concierge" to introduce yourself.
+              
               RULES:
               1. Respond fluently in the SAME language the guest uses.
-              2. Keep responses elegant.
-              3. Organize your response into clear short paragraphs. Strictly NO bullet points.
+              2. Use elegant, flowing language. Organize your response into clear, short paragraphs. 
+              3. Strictly NO bullet points.
               4. Use **bold text** for prices, tour names, and food items.
               5. Limit recommendations to a maximum of 4 at a time to remain concise.
-              6. Always ensure every sentence is complete.
-              7. If a specific price isn't in the info, offer to contact the front desk.
-              8. Do not start every new paragraph with a greeting, let the converstaion flow as it would in the real words 
+              6. Ensure every sentence is grammatically complete.
+              7. Do not repeat greetings in the middle of a conversation; let the dialogue flow naturally.
+              8. If a price is unknown, politely offer to consult the front desk.
 
               LODGE KNOWLEDGE:
               ${lodgeInfo}
@@ -79,7 +83,7 @@ export const askAI = webMethod(
             }
           ],
           max_tokens: 500,
-          temperature: 0.6, // Slightly increased for more natural "Royal" flow
+          temperature: 0.5,
           stop: ["User:", "Nkhosi:"]
         })
       });
